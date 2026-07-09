@@ -12,6 +12,9 @@
     <!-- Tailwind CSS v4 Browser Compiler -->
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
 
+    <!-- Google Identity Services client library -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <!-- Custom Theme & CSS overrides for tailored animations -->
     <style type="text/css">
       @theme {
@@ -72,8 +75,30 @@
     <div class="absolute top-0 left-1/4 w-[400px] h-[400px] bg-gradient-to-tr from-violet-300/10 to-blue-300/10 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-gradient-to-br from-blue-300/10 to-violet-300/10 rounded-full blur-3xl pointer-events-none"></div>
 
+    <!-- Header with Google Sign-In & Profile -->
+    <header class="w-full max-w-2xl px-6 pt-6 flex justify-between items-center z-20">
+      <div></div> <!-- Left space to push login badge to the right -->
+      <div id="authContainer" class="flex items-center gap-3 transition-all duration-300">
+        <!-- Google Sign-In Button Container -->
+        <div id="googleSignInContainer" class="transition-all duration-300">
+          <div id="googleBtn"></div>
+        </div>
+        
+        <!-- User Profile Badge (Hidden by default, shown when logged in) -->
+        <div id="userProfileBadge" class="hidden flex items-center gap-3 bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] px-3.5 py-1.5 rounded-full transition-all duration-300">
+          <img id="userPicture" src="" alt="User Profile" class="w-8 h-8 rounded-full border border-slate-200 object-cover" referrerpolicy="no-referrer">
+          <div class="flex flex-col text-left">
+            <span id="userName" class="text-xs font-semibold text-slate-800 leading-tight"></span>
+            <button id="logoutBtn" class="text-[10px] font-bold text-slate-400 hover:text-rose-500 text-left transition-colors cursor-pointer leading-none">
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
     <!-- Main Content Container -->
-    <main class="w-full max-w-2xl px-6 py-12 md:py-20 flex-grow flex flex-col justify-center items-center z-10">
+    <main class="w-full max-w-2xl px-6 py-8 md:py-12 flex-grow flex flex-col justify-center items-center z-10">
       
       <!-- Top Branding -->
       <div class="text-center mb-10">
@@ -265,6 +290,14 @@
       // =========================================================================
       const BACKEND_API_URL = 'https://prompt-generator-red-nine.vercel.app';
 
+      // =========================================================================
+      // GOOGLE SIGN-IN CONFIGURATION:
+      // Provide your Google OAuth Client ID here (from Google Cloud Console).
+      // If kept as a placeholder or empty, the applet gracefully activates 
+      // "Demonstration Mode" rendering a beautiful Google Login simulation.
+      // =========================================================================
+      const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
       // DOM Elements Selection
       const dropzone = document.getElementById('dropzone');
       const fileInput = document.getElementById('fileInput');
@@ -286,6 +319,15 @@
       const closeErrorBtn = document.getElementById('closeErrorBtn');
       const loadingMessage = document.getElementById('loadingMessage');
 
+      // Authentication DOM Elements
+      const authContainer = document.getElementById('authContainer');
+      const googleSignInContainer = document.getElementById('googleSignInContainer');
+      const googleBtn = document.getElementById('googleBtn');
+      const userProfileBadge = document.getElementById('userProfileBadge');
+      const userPicture = document.getElementById('userPicture');
+      const userName = document.getElementById('userName');
+      const logoutBtn = document.getElementById('logoutBtn');
+
       // State Management variables
       let uploadedImageBase64 = null;
       let isGenerating = false;
@@ -300,6 +342,139 @@
         "Formatting optimized descriptive prompt...",
         "Finalizing high-fidelity output prompt..."
       ];
+
+      // =========================================================================
+      // AUTHENTICATION ENGINE
+      // =========================================================================
+      const isRealClientId = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID');
+
+      function initAuth() {
+        // Check if user is already cached in localStorage
+        const cachedUser = localStorage.getItem('g_user');
+        if (cachedUser) {
+          try {
+            const user = JSON.parse(cachedUser);
+            showUserLoggedIn(user);
+            return;
+          } catch (e) {
+            localStorage.removeItem('g_user');
+          }
+        }
+        showUserLoggedOut();
+      }
+
+      function showUserLoggedOut() {
+        userProfileBadge.classList.add('hidden');
+        googleSignInContainer.classList.remove('hidden');
+
+        if (isRealClientId) {
+          try {
+            // Initialize official Google Identity Services client-side script
+            google.accounts.id.initialize({
+              client_id: GOOGLE_CLIENT_ID,
+              callback: handleCredentialResponse,
+              auto_select: false,
+              cancel_on_tap_outside: true
+            });
+            
+            google.accounts.id.renderButton(
+              googleBtn,
+              { 
+                theme: "outline", 
+                size: "medium", 
+                type: "standard", 
+                shape: "pill",
+                text: "signin_with",
+                logo_alignment: "left"
+              }
+            );
+          } catch (error) {
+            console.warn("Google GIS SDK failed to initialize. Falling back to beautiful custom demo mode button:", error);
+            renderDemoButton();
+          }
+        } else {
+          renderDemoButton();
+        }
+      }
+
+      function renderDemoButton() {
+        googleBtn.innerHTML = `
+          <button id="customGoogleBtn" class="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-1.5 rounded-full border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all duration-200 cursor-pointer text-xs select-none hover:shadow-md active:scale-95">
+            <svg class="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+          </button>
+        `;
+
+        document.getElementById('customGoogleBtn').addEventListener('click', () => {
+          // Mock login details for instant exploration/demo
+          const mockUser = {
+            name: "Zelili Info",
+            email: "zeliliinfo@gmail.com",
+            picture: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+          };
+          localStorage.setItem('g_user', JSON.stringify(mockUser));
+          showUserLoggedIn(mockUser);
+          showToast(`Welcome back, ${mockUser.name}!`, 'success');
+        });
+      }
+
+      function handleCredentialResponse(response) {
+        const payload = decodeJwt(response.credential);
+        if (payload) {
+          const user = {
+            name: payload.name,
+            email: payload.email,
+            picture: payload.picture
+          };
+          localStorage.setItem('g_user', JSON.stringify(user));
+          showUserLoggedIn(user);
+          showToast(`Successfully logged in as ${user.name}!`, 'success');
+        } else {
+          showToast('Failed to retrieve user profile from Google. Please try again.', 'error');
+        }
+      }
+
+      function showUserLoggedIn(user) {
+        googleSignInContainer.classList.add('hidden');
+        userProfileBadge.classList.remove('hidden');
+        userPicture.src = user.picture;
+        userName.innerText = user.name;
+      }
+
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('g_user');
+        showUserLoggedOut();
+        showToast('Successfully signed out.', 'success');
+      });
+
+      // Simple, elegant client-side decoding of JWT token without external libraries
+      function decodeJwt(token) {
+        try {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          return JSON.parse(jsonPayload);
+        } catch (error) {
+          console.error("Failed to decode JWT:", error);
+          return null;
+        }
+      }
+
+      // Initialize Authentication on load
+      window.addEventListener('load', () => {
+        initAuth();
+      });
+
+      // =========================================================================
+      // IMAGE HANDLERS & NAVIGATION FLOW
+      // =========================================================================
 
       // Handle Drag & Drop events
       ['dragenter', 'dragover'].forEach(eventName => {
@@ -341,7 +516,7 @@
       function handleImageFile(file) {
         hideError();
         if (!file.type.startsWith('image/')) {
-          showError('Invalid file type. Please upload an image file (PNG, JPG, or WEBP).');
+          showToast('Invalid file type. Please upload an image file (PNG, JPG, or WEBP).', 'error');
           return;
         }
 
@@ -357,7 +532,7 @@
           previewSection.classList.add('fade-in');
         };
         reader.onerror = () => {
-          showError('Error reading file. Please try selecting the image again.');
+          showToast('Error reading file. Please try selecting the image again.', 'error');
         };
       }
 
@@ -376,8 +551,20 @@
         hideError();
       }
 
-      // Generate action trigger
+      // Generate action trigger (Protected by Authentication Gatekeeper)
       generateBtn.addEventListener('click', async () => {
+        // AUTHENTICATION GATEKEEPER
+        const cachedUser = localStorage.getItem('g_user');
+        if (!cachedUser) {
+          showToast('Please Sign in with Google at the top right of the page first!', 'error');
+          // Add a subtle shake / pulse feedback to the authContainer to grab user's focus
+          authContainer.classList.add('scale-110');
+          setTimeout(() => {
+            authContainer.classList.remove('scale-110');
+          }, 300);
+          return;
+        }
+
         if (!uploadedImageBase64 || isGenerating) return;
 
         isGenerating = true;
@@ -434,7 +621,7 @@
           clearInterval(loadingMessageInterval);
           loadingSection.classList.add('hidden');
           previewSection.classList.remove('hidden');
-          showError(error.message || 'Failed to generate prompt. Please verify server connection.');
+          showToast(error.message || 'Failed to generate prompt. Please verify server connection.', 'error');
         } finally {
           isGenerating = false;
         }
@@ -468,11 +655,33 @@
         });
       });
 
-      // Error Alert Helpers
-      function showError(msg) {
+      // Dynamic Multipurpose Alert Toast Helper (Supports Error and Success States)
+      function showToast(msg, type = 'error') {
         errorMessage.innerText = msg;
+        
+        // Remove existing styled classes to reset cleanly
+        errorToast.className = "hidden mt-6 px-5 py-3.5 rounded-2xl text-sm font-medium w-full flex items-center gap-3 scale-up transition-all duration-300";
+        
+        const svgEl = errorToast.querySelector('svg');
+        
+        if (type === 'success') {
+          errorToast.classList.add('bg-emerald-50', 'border', 'border-emerald-100', 'text-emerald-700');
+          svgEl.className.baseVal = "text-emerald-500 shrink-0";
+          svgEl.innerHTML = `
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="9 11 12 14 16 9"/>
+          `;
+        } else {
+          errorToast.classList.add('bg-rose-50', 'border', 'border-rose-100', 'text-rose-700');
+          svgEl.className.baseVal = "text-rose-500 shrink-0";
+          svgEl.innerHTML = `
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          `;
+        }
+        
         errorToast.classList.remove('hidden');
-        errorToast.classList.add('fade-in');
       }
 
       function hideError() {
