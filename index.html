@@ -257,6 +257,14 @@
 
     <!-- Interactive Script App Engine -->
     <script>
+      // =========================================================================
+      // CONFIGURATION: If you host this static index.html on your main domain
+      // (like geminipromptgenerator.online), change this empty string to your
+      // deployed Vercel Backend URL (e.g. 'https://your-vercel-project.vercel.app').
+      // Keep it as '' if the frontend and backend are hosted on the exact same domain.
+      // =========================================================================
+      const BACKEND_API_URL = 'https://prompt-generator-red-nine.vercel.app';
+
       // DOM Elements Selection
       const dropzone = document.getElementById('dropzone');
       const fileInput = document.getElementById('fileInput');
@@ -394,7 +402,11 @@
         }, 1500);
 
         try {
-          const response = await fetch('/api/generate-prompt', {
+          const apiEndpoint = BACKEND_API_URL 
+            ? `${BACKEND_API_URL.replace(/\/$/, '')}/api/generate-prompt` 
+            : '/api/generate-prompt';
+
+          const response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
