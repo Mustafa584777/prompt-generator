@@ -1,0 +1,6 @@
+{
+  "name": "GeminiPromptGenerator",
+  "description": "A beautiful, modern, single-page web app that uses Gemini 3.5 Flash to convert any uploaded image into a highly detailed prompt.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

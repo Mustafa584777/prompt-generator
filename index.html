@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeminiPromptGenerator - Convert Photo to Prompt</title>
+    <!-- Premium Fonts: Inter for reading, Space Grotesk for display -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS v4 Browser Compiler -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+
+    <!-- Custom Theme & CSS overrides for tailored animations -->
+    <style type="text/css">
+      @theme {
+        --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+      }
+
+      /* Subtle premium background grid */
+      .bg-grid-pattern {
+        background-size: 40px 40px;
+        background-image: 
+          linear-gradient(to right, rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+      }
+
+      /* Smooth transition helper classes */
+      .fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+      .fade-out {
+        animation: fadeOut 0.3s ease-in forwards;
+      }
+      .scale-up {
+        animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-8px); }
+      }
+
+      @keyframes scaleUp {
+        from { opacity: 0; transform: scale(0.95) translateY(4px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+      }
+
+      /* Smooth shimmer loading effect */
+      .shimmer {
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: loadingShimmer 1.5s infinite;
+      }
+
+      @keyframes loadingShimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+    </style>
+  </head>
+  <body class="bg-[#fafaff] text-slate-900 font-sans min-h-screen flex flex-col items-center justify-between bg-grid-pattern relative">
+    
+    <!-- Background Gradient Accents (Subtle Glows) -->
+    <div class="absolute top-0 left-1/4 w-[400px] h-[400px] bg-gradient-to-tr from-violet-300/10 to-blue-300/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-gradient-to-br from-blue-300/10 to-violet-300/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Main Content Container -->
+    <main class="w-full max-w-2xl px-6 py-12 md:py-20 flex-grow flex flex-col justify-center items-center z-10">
+      
+      <!-- Top Branding -->
+      <div class="text-center mb-10">
+        <h1 class="font-display font-bold text-4xl md:text-5xl tracking-tight bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent mb-3 select-none">
+          GeminiPromptGenerator
+        </h1>
+        <p class="text-slate-500 font-medium text-base md:text-lg max-w-md mx-auto">
+          Convert any photo into a highly descriptive, beautifully crafted prompt instantly using Gemini.
+        </p>
+      </div>
+
+      <!-- Unified Container Card -->
+      <div id="appCard" class="w-full bg-white border border-slate-100 shadow-[0_20px_50px_rgba(99,102,241,0.05)] rounded-3xl p-6 md:p-8 transition-all duration-300">
+        
+        <!-- STEP 1: Upload Dropzone -->
+        <div id="dropzoneSection" class="block">
+          <div 
+            id="dropzone" 
+            class="group border-2 border-dashed border-slate-200 hover:border-violet-400 bg-slate-50/50 hover:bg-violet-50/10 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center min-h-[260px] relative overflow-hidden"
+          >
+            <!-- Dropzone Active Overlay Glow -->
+            <div class="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+            
+            <!-- Standard State UI -->
+            <div id="dropzonePrompt" class="flex flex-col items-center justify-center transition-all duration-300">
+              <div class="w-16 h-16 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center text-violet-500 mb-5 group-hover:scale-110 group-hover:rotate-1 transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <p class="text-slate-700 font-semibold text-lg mb-1.5">
+                Drag and drop your image here
+              </p>
+              <p class="text-slate-400 text-sm font-medium mb-4">
+                or click to browse from files
+              </p>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 uppercase tracking-wide">
+                PNG, JPG, WEBP
+              </span>
+            </div>
+            <input type="file" id="fileInput" class="hidden" accept="image/*" />
+          </div>
+        </div>
+
+        <!-- STEP 2: Image Preview & Actions (Hidden initially) -->
+        <div id="previewSection" class="hidden space-y-6">
+          <div class="relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-inner flex justify-center max-h-[350px]">
+            <img id="imagePreview" src="" alt="Uploaded source image" class="object-contain max-h-[350px] w-auto h-auto rounded-2xl" />
+            <!-- Change Photo Quick Button -->
+            <button 
+              id="changeImageBtn" 
+              class="absolute top-4 right-4 bg-white/90 hover:bg-white text-slate-700 hover:text-rose-600 shadow-md border border-slate-200/50 backdrop-blur-sm px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
+              title="Remove image"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+              Remove
+            </button>
+          </div>
+
+          <!-- Main Launch Trigger -->
+          <button 
+            id="generateBtn" 
+            class="w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg shadow-violet-100 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer transform active:scale-98"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v2"/>
+              <path d="M12 20v2"/>
+              <path d="m4.93 4.93 1.41 1.41"/>
+              <path d="m17.66 17.66 1.41 1.41"/>
+              <path d="M2 12h2"/>
+              <path d="M20 12h2"/>
+              <path d="m6.34 17.66-1.41 1.41"/>
+              <path d="m19.07 4.93-1.41 1.41"/>
+            </svg>
+            Generate Prompt
+          </button>
+        </div>
+
+        <!-- STEP 3: Loading Screen (Hidden initially) -->
+        <div id="loadingSection" class="hidden py-10 text-center flex flex-col items-center justify-center space-y-6">
+          <div class="relative w-20 h-20">
+            <!-- Intersecting Pulsing Circles with Gradient -->
+            <div class="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-t-violet-600 border-r-blue-600 animate-spin"></div>
+          </div>
+          
+          <div class="space-y-2">
+            <p id="loadingMessage" class="text-slate-800 font-semibold text-lg transition-all duration-300 min-h-[28px]">
+              Analyzing image composition...
+            </p>
+            <p class="text-slate-400 text-sm font-medium">
+              This usually takes 3-5 seconds
+            </p>
+          </div>
+          
+          <!-- Mock Line Shimmer placeholders to make it look responsive and real -->
+          <div class="w-full space-y-3 pt-4">
+            <div class="shimmer h-4 rounded-full w-3/4 mx-auto"></div>
+            <div class="shimmer h-4 rounded-full w-5/6 mx-auto"></div>
+            <div class="shimmer h-4 rounded-full w-2/3 mx-auto"></div>
+          </div>
+        </div>
+
+        <!-- STEP 4: Prompt Result View (Hidden initially) -->
+        <div id="resultSection" class="hidden space-y-6 scale-up">
+          <div class="flex items-center justify-between">
+            <h3 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-violet-600"></span>
+              Generated Prompt
+            </h3>
+            
+            <button 
+              id="tryAgainBtn" 
+              class="text-xs font-semibold text-slate-400 hover:text-violet-600 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <polyline points="3 3 3 8 8 8"/>
+              </svg>
+              Upload Another
+            </button>
+          </div>
+
+          <!-- Result Container Box -->
+          <div class="relative bg-slate-50/70 border border-slate-100 rounded-2xl p-6 transition-all">
+            <!-- Copy Prompt Button Floating Overlay -->
+            <button 
+              id="copyBtn" 
+              class="absolute top-4 right-4 bg-white hover:bg-slate-50 text-slate-700 shadow-sm border border-slate-200/50 rounded-xl p-2.5 transition-all duration-200 flex items-center gap-2 cursor-pointer group"
+              title="Copy to clipboard"
+            >
+              <!-- Copy Icon -->
+              <svg id="copyIcon" class="group-hover:scale-105 transition-transform" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+              </svg>
+              <!-- Success Tick Icon (Hidden by default) -->
+              <svg id="successIcon" class="hidden text-emerald-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span id="copyBtnText" class="text-xs font-semibold text-slate-600 group-hover:text-slate-800">Copy Prompt</span>
+            </button>
+
+            <!-- Text Content -->
+            <div id="resultText" class="font-sans text-slate-700 leading-relaxed text-sm md:text-base pr-28 max-h-[350px] overflow-y-auto whitespace-pre-wrap">
+              <!-- Content injected here dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- General Global Error Alert Toast -->
+      <div id="errorToast" class="hidden mt-6 bg-rose-50 border border-rose-100 text-rose-700 px-5 py-3.5 rounded-2xl text-sm font-medium w-full flex items-center gap-3 scale-up">
+        <svg xmlns="http://www.w3.org/2000/svg" class="text-rose-500 shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span id="errorMessage" class="flex-grow">An error occurred. Please try again.</span>
+        <button id="closeErrorBtn" class="text-rose-400 hover:text-rose-700 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Footer Branding -->
+    <footer class="w-full max-w-2xl text-center pb-8 pt-4 px-6 z-10 text-slate-400 text-xs font-medium border-t border-slate-100/40 select-none">
+      Powered by <span class="bg-gradient-to-r from-violet-500 to-blue-500 bg-clip-text text-transparent font-semibold">Gemini 3.5 Flash</span> • Single-Screen Static Engine
+    </footer>
+
+    <!-- Interactive Script App Engine -->
+    <script>
+      // DOM Elements Selection
+      const dropzone = document.getElementById('dropzone');
+      const fileInput = document.getElementById('fileInput');
+      const dropzoneSection = document.getElementById('dropzoneSection');
+      const previewSection = document.getElementById('previewSection');
+      const imagePreview = document.getElementById('imagePreview');
+      const changeImageBtn = document.getElementById('changeImageBtn');
+      const generateBtn = document.getElementById('generateBtn');
+      const loadingSection = document.getElementById('loadingSection');
+      const resultSection = document.getElementById('resultSection');
+      const resultText = document.getElementById('resultText');
+      const copyBtn = document.getElementById('copyBtn');
+      const copyIcon = document.getElementById('copyIcon');
+      const successIcon = document.getElementById('successIcon');
+      const copyBtnText = document.getElementById('copyBtnText');
+      const tryAgainBtn = document.getElementById('tryAgainBtn');
+      const errorToast = document.getElementById('errorToast');
+      const errorMessage = document.getElementById('errorMessage');
+      const closeErrorBtn = document.getElementById('closeErrorBtn');
+      const loadingMessage = document.getElementById('loadingMessage');
+
+      // State Management variables
+      let uploadedImageBase64 = null;
+      let isGenerating = false;
+      let loadingMessageInterval = null;
+
+      // Loading screen rotating messages list
+      const loadingPrompts = [
+        "Analyzing image composition & structure...",
+        "Identifying primary subject & depth details...",
+        "Recognizing artistic style & aesthetics...",
+        "Evaluating lighting source & color palettes...",
+        "Formatting optimized descriptive prompt...",
+        "Finalizing high-fidelity output prompt..."
+      ];
+
+      // Handle Drag & Drop events
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('border-violet-500', 'bg-violet-50/20');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('border-violet-500', 'bg-violet-50/20');
+        }, false);
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+          handleImageFile(files[0]);
+        }
+      });
+
+      // Handle click to browse
+      dropzone.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          handleImageFile(e.target.files[0]);
+        }
+      });
+
+      // Core image ingestion function
+      function handleImageFile(file) {
+        hideError();
+        if (!file.type.startsWith('image/')) {
+          showError('Invalid file type. Please upload an image file (PNG, JPG, or WEBP).');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          uploadedImageBase64 = reader.result;
+          imagePreview.src = uploadedImageBase64;
+          
+          // Smooth transition out of dropzone into preview
+          dropzoneSection.classList.add('hidden');
+          previewSection.classList.remove('hidden');
+          previewSection.classList.add('fade-in');
+        };
+        reader.onerror = () => {
+          showError('Error reading file. Please try selecting the image again.');
+        };
+      }
+
+      // Quick Clear/Remove Image Action
+      changeImageBtn.addEventListener('click', () => {
+        clearUploadedData();
+      });
+
+      function clearUploadedData() {
+        uploadedImageBase64 = null;
+        imagePreview.src = '';
+        fileInput.value = '';
+        previewSection.classList.add('hidden');
+        dropzoneSection.classList.remove('hidden');
+        dropzoneSection.classList.add('fade-in');
+        hideError();
+      }
+
+      // Generate action trigger
+      generateBtn.addEventListener('click', async () => {
+        if (!uploadedImageBase64 || isGenerating) return;
+
+        isGenerating = true;
+        hideError();
+
+        // Switch to loading UI
+        previewSection.classList.add('hidden');
+        loadingSection.classList.remove('hidden');
+        loadingSection.classList.add('fade-in');
+
+        // Start cycling through encouraging loading messages
+        let messageIndex = 0;
+        loadingMessage.innerText = loadingPrompts[0];
+        loadingMessageInterval = setInterval(() => {
+          messageIndex = (messageIndex + 1) % loadingPrompts.length;
+          // Apply a quick smooth fade text transition
+          loadingMessage.classList.add('opacity-0');
+          setTimeout(() => {
+            loadingMessage.innerText = loadingPrompts[messageIndex];
+            loadingMessage.classList.remove('opacity-0');
+          }, 150);
+        }, 1500);
+
+        try {
+          const response = await fetch('/api/generate-prompt', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: uploadedImageBase64 })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Server rejected request.');
+          }
+
+          // Stop loading animations
+          clearInterval(loadingMessageInterval);
+          loadingSection.classList.add('hidden');
+
+          // Populate prompt and reveal result area beautifully
+          resultText.innerText = data.prompt;
+          resultSection.classList.remove('hidden');
+          resultSection.classList.add('scale-up');
+
+        } catch (error) {
+          console.error(error);
+          clearInterval(loadingMessageInterval);
+          loadingSection.classList.add('hidden');
+          previewSection.classList.remove('hidden');
+          showError(error.message || 'Failed to generate prompt. Please verify server connection.');
+        } finally {
+          isGenerating = false;
+        }
+      });
+
+      // Try Again / Reset Trigger
+      tryAgainBtn.addEventListener('click', () => {
+        resultSection.classList.add('hidden');
+        clearUploadedData();
+      });
+
+      // Copy Prompt with beautiful Success State Feedback
+      copyBtn.addEventListener('click', () => {
+        const textToCopy = resultText.innerText;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          // Trigger copy animation feedback
+          copyIcon.classList.add('hidden');
+          successIcon.classList.remove('hidden');
+          copyBtnText.innerText = 'Copied!';
+          copyBtn.classList.add('border-emerald-200', 'bg-emerald-50/40');
+          
+          // Revert back to original state after 2 seconds
+          setTimeout(() => {
+            copyIcon.classList.remove('hidden');
+            successIcon.classList.add('hidden');
+            copyBtnText.innerText = 'Copy Prompt';
+            copyBtn.classList.remove('border-emerald-200', 'bg-emerald-50/40');
+          }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy text: ', err);
+        });
+      });
+
+      // Error Alert Helpers
+      function showError(msg) {
+        errorMessage.innerText = msg;
+        errorToast.classList.remove('hidden');
+        errorToast.classList.add('fade-in');
+      }
+
+      function hideError() {
+        errorToast.classList.add('hidden');
+      }
+
+      closeErrorBtn.addEventListener('click', () => {
+        hideError();
+      });
+    </script>
+  </body>
+</html>
