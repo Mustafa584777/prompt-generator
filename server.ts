@@ -3,6 +3,9 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import crypto from "crypto";
+// @ts-ignore
+import Razorpay from "razorpay";
 
 dotenv.config();
 
@@ -25,6 +28,24 @@ function getAiClient(): GoogleGenAI {
     });
   }
   return aiClient;
+}
+
+let rzpClient: any = null;
+
+// Lazy initialization of Razorpay client to prevent crashes if keys are not configured yet
+function getRazorpayClient(): any {
+  if (!rzpClient) {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      throw new Error("Razorpay credentials (RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET) are missing. Please configure them in your environment.");
+    }
+    rzpClient = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret,
+    });
+  }
+  return rzpClient;
 }
 
 async function startServer() {
@@ -99,6 +120,73 @@ At the very end of your response, provide 4-6 comma-separated keyword tags. Let 
     } catch (error: any) {
       console.error("Error generating prompt with Gemini:", error);
       res.status(500).json({ error: error.message || "An unexpected error occurred on the server." });
+    }
+  });
+
+  // API endpoint to serve public config to frontend safely
+  app.get("/api/config", (req, res) => {
+    res.json({
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID || ""
+    });
+  });
+
+  // API endpoint to create a Razorpay Order
+  app.post("/api/create-order", async (req, res) => {
+    try {
+      const { amount, currency = "INR" } = req.body;
+      if (!amount) {
+        return res.status(400).json({ error: "Amount is required." });
+      }
+
+      const amountInPaise = parseInt(amount, 10);
+      if (isNaN(amountInPaise) || amountInPaise < 100) {
+        return res.status(400).json({ error: "Amount must be at least 100 paise (1 INR)." });
+      }
+
+      const rzp = getRazorpayClient();
+      const orderOptions = {
+        amount: amountInPaise,
+        currency: currency,
+        receipt: `receipt_order_${Date.now()}`
+      };
+
+      const order = await rzp.orders.create(orderOptions);
+      res.json({
+        order_id: order.id,
+        amount: order.amount,
+        currency: order.currency
+      });
+    } catch (error: any) {
+      console.error("Error creating Razorpay order:", error);
+      res.status(500).json({ error: error.message || "Failed to create Razorpay order." });
+    }
+  });
+
+  // API endpoint to verify Razorpay Payment Signature
+  app.post("/api/verify-payment", async (req, res) => {
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({ error: "Missing required signature verification parameters." });
+      }
+
+      const secret = process.env.RAZORPAY_KEY_SECRET;
+      if (!secret) {
+        return res.status(500).json({ error: "Razorpay secret key is not configured." });
+      }
+
+      const hmac = crypto.createHmac("sha256", secret);
+      hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+      const generatedSignature = hmac.digest("hex");
+
+      if (generatedSignature === razorpay_signature) {
+        res.json({ success: true, message: "Payment verified successfully." });
+      } else {
+        res.status(400).json({ success: false, error: "Signature verification failed." });
+      }
+    } catch (error: any) {
+      console.error("Error verifying payment signature:", error);
+      res.status(500).json({ error: error.message || "An error occurred during payment verification." });
     }
   });
 
