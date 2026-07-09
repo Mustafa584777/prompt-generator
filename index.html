@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GeminiPromptGenerator - Convert Photo to Prompt</title>
+    
     <!-- Premium Fonts: Inter for reading, Space Grotesk for display -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,9 +12,6 @@
     
     <!-- Tailwind CSS v4 Browser Compiler -->
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-
-    <!-- Google Identity Services client library -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <!-- Custom Theme & CSS overrides for tailored animations -->
     <style type="text/css">
@@ -71,21 +69,27 @@
   </head>
   <body class="bg-[#fafaff] text-slate-900 font-sans min-h-screen flex flex-col items-center justify-between bg-grid-pattern relative">
     
-    <!-- Background Gradient Accents (Subtle Glows) -->
+    <!-- Background Gradient Accents -->
     <div class="absolute top-0 left-1/4 w-[400px] h-[400px] bg-gradient-to-tr from-violet-300/10 to-blue-300/10 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-gradient-to-br from-blue-300/10 to-violet-300/10 rounded-full blur-3xl pointer-events-none"></div>
 
-    <!-- Header with Google Sign-In & Profile -->
-    <header class="w-full max-w-2xl px-6 pt-6 flex justify-between items-center z-20">
-      <div></div> <!-- Left space to push login badge to the right -->
-      <div id="authContainer" class="flex items-center gap-3 transition-all duration-300">
-        <!-- Google Sign-In Button Container -->
-        <div id="googleSignInContainer" class="transition-all duration-300">
-          <div id="googleBtn"></div>
+    <!-- HEADER / NAVIGATION BAR -->
+    <header class="w-full max-w-5xl px-6 pt-6 flex justify-between items-center z-20">
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center text-white shadow-md shadow-violet-200">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.912 5.886L4.201 10.8 10.088 12.7 12 18.586l1.912-5.886 5.887-1.912-5.887-1.912L12 3Z"/>
+          </svg>
         </div>
-        
-        <!-- User Profile Badge (Hidden by default, shown when logged in) -->
-        <div id="userProfileBadge" class="hidden flex items-center gap-3 bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] px-3.5 py-1.5 rounded-full transition-all duration-300">
+        <span class="font-display font-bold text-xl tracking-tight bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent select-none">
+          GeminiPromptGenerator
+        </span>
+      </div>
+
+      <!-- Authentication Container -->
+      <div id="authContainer" class="flex items-center gap-3">
+        <!-- User Profile Badge (Shown when logged in) -->
+        <div id="userProfileBadge" class="hidden flex items-center gap-3 bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] px-3.5 py-1.5 rounded-full transition-all duration-300">
           <img id="userPicture" src="" alt="User Profile" class="w-8 h-8 rounded-full border border-slate-200 object-cover" referrerpolicy="no-referrer">
           <div class="flex flex-col text-left">
             <span id="userName" class="text-xs font-semibold text-slate-800 leading-tight"></span>
@@ -97,168 +101,261 @@
       </div>
     </header>
 
-    <!-- Main Content Container -->
-    <main class="w-full max-w-2xl px-6 py-8 md:py-12 flex-grow flex flex-col justify-center items-center z-10">
-      
-      <!-- Top Branding -->
-      <div class="text-center mb-10">
-        <h1 class="font-display font-bold text-4xl md:text-5xl tracking-tight bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent mb-3 select-none">
-          GeminiPromptGenerator
-        </h1>
-        <p class="text-slate-500 font-medium text-base md:text-lg max-w-md mx-auto">
-          Convert any photo into a highly descriptive, beautifully crafted prompt instantly using Gemini.
-        </p>
-      </div>
+    <!-- MAIN APP CONTENT -->
+    <main class="w-full max-w-5xl px-6 py-8 md:py-12 flex-grow flex flex-col justify-center items-center z-10">
 
-      <!-- Unified Container Card -->
-      <div id="appCard" class="w-full bg-white border border-slate-100 shadow-[0_20px_50px_rgba(99,102,241,0.05)] rounded-3xl p-6 md:p-8 transition-all duration-300">
-        
-        <!-- STEP 1: Upload Dropzone -->
-        <div id="dropzoneSection" class="block">
-          <div 
-            id="dropzone" 
-            class="group border-2 border-dashed border-slate-200 hover:border-violet-400 bg-slate-50/50 hover:bg-violet-50/10 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center min-h-[260px] relative overflow-hidden"
-          >
-            <!-- Dropzone Active Overlay Glow -->
-            <div class="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-            
-            <!-- Standard State UI -->
-            <div id="dropzonePrompt" class="flex flex-col items-center justify-center transition-all duration-300">
-              <div class="w-16 h-16 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center text-violet-500 mb-5 group-hover:scale-110 group-hover:rotate-1 transition-all duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-              </div>
-              <p class="text-slate-700 font-semibold text-lg mb-1.5">
-                Drag and drop your image here
-              </p>
-              <p class="text-slate-400 text-sm font-medium mb-4">
-                or click to browse from files
-              </p>
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 uppercase tracking-wide">
-                PNG, JPG, WEBP
-              </span>
-            </div>
-            <input type="file" id="fileInput" class="hidden" accept="image/*" />
-          </div>
+      <!-- SECTION 1: LOGGED-OUT WELCOME SCREEN -->
+      <div id="loggedOutView" class="w-full max-w-2xl text-center space-y-10 py-10 transition-all duration-300">
+        <div class="space-y-4">
+          <h1 class="font-display font-bold text-4xl md:text-6xl tracking-tight leading-tight text-slate-800">
+            Convert Any Image Into <br />
+            <span class="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent">
+              High-Fidelity Prompts
+            </span>
+          </h1>
+          <p class="text-slate-500 font-medium text-base md:text-lg max-w-lg mx-auto leading-relaxed">
+            Upload your graphics or photos and let Gemini 3.5 Flash automatically craft beautifully structured, photorealistic prompts.
+          </p>
         </div>
 
-        <!-- STEP 2: Image Preview & Actions (Hidden initially) -->
-        <div id="previewSection" class="hidden space-y-6">
-          <div class="relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-inner flex justify-center max-h-[350px]">
-            <img id="imagePreview" src="" alt="Uploaded source image" class="object-contain max-h-[350px] w-auto h-auto rounded-2xl" />
-            <!-- Change Photo Quick Button -->
-            <button 
-              id="changeImageBtn" 
-              class="absolute top-4 right-4 bg-white/90 hover:bg-white text-slate-700 hover:text-rose-600 shadow-md border border-slate-200/50 backdrop-blur-sm px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
-              title="Remove image"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 6h18"/>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-              </svg>
-              Remove
-            </button>
-          </div>
-
-          <!-- Main Launch Trigger -->
-          <button 
-            id="generateBtn" 
-            class="w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg shadow-violet-100 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer transform active:scale-98"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2v2"/>
-              <path d="M12 20v2"/>
-              <path d="m4.93 4.93 1.41 1.41"/>
-              <path d="m17.66 17.66 1.41 1.41"/>
-              <path d="M2 12h2"/>
-              <path d="M20 12h2"/>
-              <path d="m6.34 17.66-1.41 1.41"/>
-              <path d="m19.07 4.93-1.41 1.41"/>
+        <!-- Call-to-Action Sign In Panel -->
+        <div class="bg-white border border-slate-100 shadow-[0_20px_50px_rgba(99,102,241,0.04)] rounded-3xl p-8 md:p-10 max-w-md mx-auto space-y-6">
+          <div class="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center text-violet-600 mx-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
             </svg>
-            Generate Prompt
-          </button>
-        </div>
-
-        <!-- STEP 3: Loading Screen (Hidden initially) -->
-        <div id="loadingSection" class="hidden py-10 text-center flex flex-col items-center justify-center space-y-6">
-          <div class="relative w-20 h-20">
-            <!-- Intersecting Pulsing Circles with Gradient -->
-            <div class="absolute inset-0 rounded-full border-4 border-slate-100"></div>
-            <div class="absolute inset-0 rounded-full border-4 border-t-violet-600 border-r-blue-600 animate-spin"></div>
           </div>
           
           <div class="space-y-2">
-            <p id="loadingMessage" class="text-slate-800 font-semibold text-lg transition-all duration-300 min-h-[28px]">
-              Analyzing image composition...
-            </p>
-            <p class="text-slate-400 text-sm font-medium">
-              This usually takes 3-5 seconds
+            <h3 class="font-display font-bold text-xl text-slate-800">Ready to Get Started?</h3>
+            <p class="text-slate-400 text-xs font-medium max-w-xs mx-auto">
+              Sign in with your Google Account to unlock prompt generation and track your creation history on your personal dashboard.
             </p>
           </div>
+
+          <!-- Real Firebase Google Auth Button -->
+          <button 
+            id="googleLoginBtn" 
+            class="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3.5 px-6 rounded-2xl border border-slate-200/80 shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-200 cursor-pointer text-sm select-none hover:shadow-md transform active:scale-98"
+          >
+            <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION 2: LOGGED-IN USER DASHBOARD (Hidden by default) -->
+      <div id="loggedInDashboard" class="hidden w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start fade-in">
+        
+        <!-- LEFT SIDEBAR: PROFILE & STATS (3 Columns) -->
+        <div class="lg:col-span-4 space-y-6">
           
-          <!-- Mock Line Shimmer placeholders to make it look responsive and real -->
-          <div class="w-full space-y-3 pt-4">
-            <div class="shimmer h-4 rounded-full w-3/4 mx-auto"></div>
-            <div class="shimmer h-4 rounded-full w-5/6 mx-auto"></div>
-            <div class="shimmer h-4 rounded-full w-2/3 mx-auto"></div>
+          <!-- Profile Information Card -->
+          <div class="bg-white border border-slate-100 shadow-[0_15px_40px_rgba(99,102,241,0.03)] rounded-3xl p-6 text-center space-y-5">
+            <div class="relative w-24 h-24 mx-auto">
+              <img id="dashUserPicture" src="" alt="User profile photo" class="w-24 h-24 rounded-full border-2 border-violet-100 object-cover shadow-sm" referrerpolicy="no-referrer">
+              <div class="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center" title="Active Account"></div>
+            </div>
+
+            <div class="space-y-1">
+              <h2 id="dashUserName" class="font-display font-bold text-xl text-slate-800 leading-tight"></h2>
+              <p id="dashUserEmail" class="text-slate-400 text-xs font-medium truncate"></p>
+            </div>
+
+            <div class="pt-4 border-t border-slate-50 flex items-center justify-between text-left">
+              <div class="space-y-0.5">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date of Joining</span>
+                <p id="dashUserJoined" class="text-sm font-semibold text-slate-700">Loading...</p>
+              </div>
+              <div class="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center text-violet-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+            </div>
           </div>
+
+          <!-- Stats Summary Card -->
+          <div class="bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-[0_15px_40px_rgba(99,102,241,0.15)] rounded-3xl p-6 relative overflow-hidden">
+            <!-- Background glow -->
+            <div class="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+            
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <span class="text-xs font-medium text-violet-200 uppercase tracking-wider">Prompts Created</span>
+                <p id="dashPromptsCount" class="text-4xl font-display font-bold">0</p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-violet-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m12 3-1.912 5.886L4.201 10.8 10.088 12.7 12 18.586l1.912-5.886 5.887-1.912-5.887-1.912L12 3Z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- STEP 4: Prompt Result View (Hidden initially) -->
-        <div id="resultSection" class="hidden space-y-6 scale-up">
-          <div class="flex items-center justify-between">
-            <h3 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-violet-600"></span>
-              Generated Prompt
-            </h3>
+        <!-- RIGHT PANEL: GENERATOR WORKSPACE (8 Columns) -->
+        <div class="lg:col-span-8">
+          <div id="appCard" class="w-full bg-white border border-slate-100 shadow-[0_20px_50px_rgba(99,102,241,0.03)] rounded-3xl p-6 md:p-8 transition-all duration-300">
             
-            <button 
-              id="tryAgainBtn" 
-              class="text-xs font-semibold text-slate-400 hover:text-violet-600 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <polyline points="3 3 3 8 8 8"/>
-              </svg>
-              Upload Another
-            </button>
-          </div>
-
-          <!-- Result Container Box -->
-          <div class="relative bg-slate-50/70 border border-slate-100 rounded-2xl p-6 transition-all">
-            <!-- Copy Prompt Button Floating Overlay -->
-            <button 
-              id="copyBtn" 
-              class="absolute top-4 right-4 bg-white hover:bg-slate-50 text-slate-700 shadow-sm border border-slate-200/50 rounded-xl p-2.5 transition-all duration-200 flex items-center gap-2 cursor-pointer group"
-              title="Copy to clipboard"
-            >
-              <!-- Copy Icon -->
-              <svg id="copyIcon" class="group-hover:scale-105 transition-transform" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-              </svg>
-              <!-- Success Tick Icon (Hidden by default) -->
-              <svg id="successIcon" class="hidden text-emerald-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              <span id="copyBtnText" class="text-xs font-semibold text-slate-600 group-hover:text-slate-800">Copy Prompt</span>
-            </button>
-
-            <!-- Text Content -->
-            <div id="resultText" class="font-sans text-slate-700 leading-relaxed text-sm md:text-base pr-28 max-h-[350px] overflow-y-auto whitespace-pre-wrap">
-              <!-- Content injected here dynamically -->
+            <!-- STEP 1: Upload Dropzone -->
+            <div id="dropzoneSection" class="block">
+              <div 
+                id="dropzone" 
+                class="group border-2 border-dashed border-slate-200 hover:border-violet-400 bg-slate-50/50 hover:bg-violet-50/10 rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center min-h-[260px] relative overflow-hidden"
+              >
+                <!-- Dropzone Active Overlay Glow -->
+                <div class="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                
+                <!-- Standard State UI -->
+                <div id="dropzonePrompt" class="flex flex-col items-center justify-center transition-all duration-300">
+                  <div class="w-16 h-16 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center text-violet-500 mb-5 group-hover:scale-110 group-hover:rotate-1 transition-all duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <p class="text-slate-700 font-semibold text-lg mb-1.5">
+                    Drag and drop your image here
+                  </p>
+                  <p class="text-slate-400 text-sm font-medium mb-4">
+                    or click to browse from files
+                  </p>
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 uppercase tracking-wide">
+                    PNG, JPG, WEBP
+                  </span>
+                </div>
+                <input type="file" id="fileInput" class="hidden" accept="image/*" />
+              </div>
             </div>
+
+            <!-- STEP 2: Image Preview & Actions (Hidden initially) -->
+            <div id="previewSection" class="hidden space-y-6">
+              <div class="relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-inner flex justify-center max-h-[350px]">
+                <img id="imagePreview" src="" alt="Uploaded source image" class="object-contain max-h-[350px] w-auto h-auto rounded-2xl" />
+                <!-- Change Photo Quick Button -->
+                <button 
+                  id="changeImageBtn" 
+                  class="absolute top-4 right-4 bg-white/90 hover:bg-white text-slate-700 hover:text-rose-600 shadow-md border border-slate-200/50 backdrop-blur-sm px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
+                  title="Remove image"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"/>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                  </svg>
+                  Remove
+                </button>
+              </div>
+
+              <!-- Main Launch Trigger -->
+              <button 
+                id="generateBtn" 
+                class="w-full bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg shadow-violet-100 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer transform active:scale-98"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v2"/>
+                  <path d="M12 20v2"/>
+                  <path d="m4.93 4.93 1.41 1.41"/>
+                  <path d="m17.66 17.66 1.41 1.41"/>
+                  <path d="M2 12h2"/>
+                  <path d="M20 12h2"/>
+                  <path d="m6.34 17.66-1.41 1.41"/>
+                  <path d="m19.07 4.93-1.41 1.41"/>
+                </svg>
+                Generate Prompt
+              </button>
+            </div>
+
+            <!-- STEP 3: Loading Screen (Hidden initially) -->
+            <div id="loadingSection" class="hidden py-10 text-center flex flex-col items-center justify-center space-y-6">
+              <div class="relative w-20 h-20">
+                <div class="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-t-violet-600 border-r-blue-600 animate-spin"></div>
+              </div>
+              
+              <div class="space-y-2">
+                <p id="loadingMessage" class="text-slate-800 font-semibold text-lg transition-all duration-300 min-h-[28px]">
+                  Analyzing image composition...
+                </p>
+                <p class="text-slate-400 text-sm font-medium">
+                  This usually takes 3-5 seconds
+                </p>
+              </div>
+              
+              <div class="w-full space-y-3 pt-4">
+                <div class="shimmer h-4 rounded-full w-3/4 mx-auto"></div>
+                <div class="shimmer h-4 rounded-full w-5/6 mx-auto"></div>
+                <div class="shimmer h-4 rounded-full w-2/3 mx-auto"></div>
+              </div>
+            </div>
+
+            <!-- STEP 4: Prompt Result View (Hidden initially) -->
+            <div id="resultSection" class="hidden space-y-6 scale-up">
+              <div class="flex items-center justify-between">
+                <h3 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-violet-600"></span>
+                  Generated Prompt
+                </h3>
+                
+                <button 
+                  id="tryAgainBtn" 
+                  class="text-xs font-semibold text-slate-400 hover:text-violet-600 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <polyline points="3 3 3 8 8 8"/>
+                  </svg>
+                  Upload Another
+                </button>
+              </div>
+
+              <!-- Result Container Box -->
+              <div class="relative bg-slate-50/70 border border-slate-100 rounded-2xl p-6 transition-all">
+                <!-- Copy Prompt Button Floating Overlay -->
+                <button 
+                  id="copyBtn" 
+                  class="absolute top-4 right-4 bg-white hover:bg-slate-50 text-slate-700 shadow-sm border border-slate-200/50 rounded-xl p-2.5 transition-all duration-200 flex items-center gap-2 cursor-pointer group"
+                  title="Copy to clipboard"
+                >
+                  <!-- Copy Icon -->
+                  <svg id="copyIcon" class="group-hover:scale-105 transition-transform" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                  </svg>
+                  <!-- Success Tick Icon (Hidden by default) -->
+                  <svg id="successIcon" class="hidden text-emerald-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span id="copyBtnText" class="text-xs font-semibold text-slate-600 group-hover:text-slate-800">Copy Prompt</span>
+                </button>
+
+                <!-- Text Content -->
+                <div id="resultText" class="font-sans text-slate-700 leading-relaxed text-sm md:text-base pr-28 max-h-[350px] overflow-y-auto whitespace-pre-wrap">
+                  <!-- Content injected here dynamically -->
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
       </div>
 
-      <!-- General Global Error Alert Toast -->
-      <div id="errorToast" class="hidden mt-6 bg-rose-50 border border-rose-100 text-rose-700 px-5 py-3.5 rounded-2xl text-sm font-medium w-full flex items-center gap-3 scale-up">
+      <!-- General Global Error/Success Alert Toast -->
+      <div id="errorToast" class="hidden mt-6 bg-rose-50 border border-rose-100 text-rose-700 px-5 py-3.5 rounded-2xl text-sm font-medium w-full flex items-center gap-3 scale-up max-w-2xl transition-all duration-300">
         <svg xmlns="http://www.w3.org/2000/svg" class="text-rose-500 shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <line x1="12" y1="8" x2="12" y2="12"/>
@@ -276,29 +373,58 @@
     </main>
 
     <!-- Footer Branding -->
-    <footer class="w-full max-w-2xl text-center pb-8 pt-4 px-6 z-10 text-slate-400 text-xs font-medium border-t border-slate-100/40 select-none">
-      Powered by <span class="bg-gradient-to-r from-violet-500 to-blue-500 bg-clip-text text-transparent font-semibold">Gemini 3.5 Flash</span> • Single-Screen Static Engine
+    <footer class="w-full max-w-5xl text-center pb-8 pt-4 px-6 z-10 text-slate-400 text-xs font-medium border-t border-slate-100/40 select-none">
+      Powered by <span class="bg-gradient-to-r from-violet-500 to-blue-500 bg-clip-text text-transparent font-semibold">Gemini 3.5 Flash</span> • Cloud Firestore Engine
     </footer>
 
-    <!-- Interactive Script App Engine -->
-    <script>
+    <!-- Interactive Script App Engine via Firebase SDK Modules -->
+    <script type="module">
+      // Import the Firebase SDK modules from CDN
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+      import { initializeFirestore, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
       // =========================================================================
-      // CONFIGURATION: If you host this static index.html on your main domain
-      // (like geminipromptgenerator.online), change this empty string to your
-      // deployed Vercel Backend URL (e.g. 'https://your-vercel-project.vercel.app').
-      // Keep it as '' if the frontend and backend are hosted on the exact same domain.
+      // CONFIGURATION: If you host this static index.html on your main domain,
+      // change this empty string to your deployed Vercel Backend URL.
       // =========================================================================
       const BACKEND_API_URL = 'https://prompt-generator-red-nine.vercel.app';
 
-      // =========================================================================
-      // GOOGLE SIGN-IN CONFIGURATION:
-      // Provide your Google OAuth Client ID here (from Google Cloud Console).
-      // If kept as a placeholder or empty, the applet gracefully activates 
-      // "Demonstration Mode" rendering a beautiful Google Login simulation.
-      // =========================================================================
-      const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCFyGzp7viV1tq25DAMnpKKSJpPngtVa14",
+        authDomain: "gen-lang-client-0844549707.firebaseapp.com",
+        projectId: "gen-lang-client-0844549707",
+        storageBucket: "gen-lang-client-0844549707.firebasestorage.app",
+        messagingSenderId: "845800015860",
+        appId: "1:845800015860:web:a6229be704605991785ba1"
+      };
+
+      // Initialize Firebase App
+      const app = initializeApp(firebaseConfig);
+      // Initialize Auth
+      const auth = getAuth(app);
+      // Initialize Firestore using the designated named database
+      const db = initializeFirestore(app, {}, "ai-studio-geminipromptgene-aabc65ec-aa1b-4b01-8a1a-3f73eb0913a5");
 
       // DOM Elements Selection
+      const loggedOutView = document.getElementById('loggedOutView');
+      const loggedInDashboard = document.getElementById('loggedInDashboard');
+      const googleLoginBtn = document.getElementById('googleLoginBtn');
+      const authContainer = document.getElementById('authContainer');
+      const userProfileBadge = document.getElementById('userProfileBadge');
+      const userPicture = document.getElementById('userPicture');
+      const userName = document.getElementById('userName');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      // Dashboard Left Sidebar Details
+      const dashUserPicture = document.getElementById('dashUserPicture');
+      const dashUserName = document.getElementById('dashUserName');
+      const dashUserEmail = document.getElementById('dashUserEmail');
+      const dashUserJoined = document.getElementById('dashUserJoined');
+      const dashPromptsCount = document.getElementById('dashPromptsCount');
+
+      // Generator Workspace Elements
       const dropzone = document.getElementById('dropzone');
       const fileInput = document.getElementById('fileInput');
       const dropzoneSection = document.getElementById('dropzoneSection');
@@ -319,16 +445,8 @@
       const closeErrorBtn = document.getElementById('closeErrorBtn');
       const loadingMessage = document.getElementById('loadingMessage');
 
-      // Authentication DOM Elements
-      const authContainer = document.getElementById('authContainer');
-      const googleSignInContainer = document.getElementById('googleSignInContainer');
-      const googleBtn = document.getElementById('googleBtn');
-      const userProfileBadge = document.getElementById('userProfileBadge');
-      const userPicture = document.getElementById('userPicture');
-      const userName = document.getElementById('userName');
-      const logoutBtn = document.getElementById('logoutBtn');
-
       // State Management variables
+      let currentUser = null;
       let uploadedImageBase64 = null;
       let isGenerating = false;
       let loadingMessageInterval = null;
@@ -344,136 +462,129 @@
       ];
 
       // =========================================================================
-      // AUTHENTICATION ENGINE
+      // AUTHENTICATION FLOW
       // =========================================================================
-      const isRealClientId = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID');
 
-      function initAuth() {
-        // Check if user is already cached in localStorage
-        const cachedUser = localStorage.getItem('g_user');
-        if (cachedUser) {
-          try {
-            const user = JSON.parse(cachedUser);
-            showUserLoggedIn(user);
-            return;
-          } catch (e) {
-            localStorage.removeItem('g_user');
-          }
+      // Monitor Auth State Changes dynamically
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          await loadUserProfileAndStats(user);
+          switchToDashboard();
+        } else {
+          currentUser = null;
+          switchToLoggedOut();
         }
-        showUserLoggedOut();
-      }
+      });
 
-      function showUserLoggedOut() {
-        userProfileBadge.classList.add('hidden');
-        googleSignInContainer.classList.remove('hidden');
+      // Sign In with Google Event Handler
+      googleLoginBtn.addEventListener('click', async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+          hideError();
+          await signInWithPopup(auth, provider);
+        } catch (error) {
+          console.error("Firebase Sign In Error: ", error);
+          showToast(error.message || 'Failed to authenticate with Google. Please try again.', 'error');
+        }
+      });
 
-        if (isRealClientId) {
-          try {
-            // Initialize official Google Identity Services client-side script
-            google.accounts.id.initialize({
-              client_id: GOOGLE_CLIENT_ID,
-              callback: handleCredentialResponse,
-              auto_select: false,
-              cancel_on_tap_outside: true
+      // Logout Event Handler
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          hideError();
+          await signOut(auth);
+        } catch (error) {
+          console.error("Sign Out Error: ", error);
+          showToast('Failed to sign out cleanly.', 'error');
+        }
+      });
+
+      // Synchronize/Fetch profile metrics from Firestore database
+      async function loadUserProfileAndStats(user) {
+        // Prepare references
+        const userDocRef = doc(db, "users", user.uid);
+        
+        try {
+          const docSnap = await getDoc(userDocRef);
+          
+          if (!docSnap.exists()) {
+            // First time login: Create profile record in database
+            const profileData = {
+              uid: user.uid,
+              displayName: user.displayName || "User",
+              email: user.email,
+              photoURL: user.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+              joinedAt: serverTimestamp(),
+              promptsCount: 0
+            };
+            
+            await setDoc(userDocRef, profileData);
+            
+            // Render local representation right away
+            dashUserJoined.innerText = new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            dashPromptsCount.innerText = "0";
+          } else {
+            // Existing user: Load metrics
+            const data = docSnap.data();
+            
+            // Convert Firestore Timestamp elegantly
+            const joinedDate = data.joinedAt ? data.joinedAt.toDate() : new Date();
+            dashUserJoined.innerText = joinedDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
             });
             
-            google.accounts.id.renderButton(
-              googleBtn,
-              { 
-                theme: "outline", 
-                size: "medium", 
-                type: "standard", 
-                shape: "pill",
-                text: "signin_with",
-                logo_alignment: "left"
-              }
-            );
-          } catch (error) {
-            console.warn("Google GIS SDK failed to initialize. Falling back to beautiful custom demo mode button:", error);
-            renderDemoButton();
+            dashPromptsCount.innerText = data.promptsCount || 0;
           }
-        } else {
-          renderDemoButton();
-        }
-      }
 
-      function renderDemoButton() {
-        googleBtn.innerHTML = `
-          <button id="customGoogleBtn" class="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-1.5 rounded-full border border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all duration-200 cursor-pointer text-xs select-none hover:shadow-md active:scale-95">
-            <svg class="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-            </svg>
-            Sign in with Google
-          </button>
-        `;
+          // Populate general header and profile attributes
+          userPicture.src = user.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80";
+          dashUserPicture.src = user.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80";
+          
+          userName.innerText = user.displayName || "User";
+          dashUserName.innerText = user.displayName || "User";
+          dashUserEmail.innerText = user.email || "";
 
-        document.getElementById('customGoogleBtn').addEventListener('click', () => {
-          // Mock login details for instant exploration/demo
-          const mockUser = {
-            name: "Zelili Info",
-            email: "zeliliinfo@gmail.com",
-            picture: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
-          };
-          localStorage.setItem('g_user', JSON.stringify(mockUser));
-          showUserLoggedIn(mockUser);
-          showToast(`Welcome back, ${mockUser.name}!`, 'success');
-        });
-      }
-
-      function handleCredentialResponse(response) {
-        const payload = decodeJwt(response.credential);
-        if (payload) {
-          const user = {
-            name: payload.name,
-            email: payload.email,
-            picture: payload.picture
-          };
-          localStorage.setItem('g_user', JSON.stringify(user));
-          showUserLoggedIn(user);
-          showToast(`Successfully logged in as ${user.name}!`, 'success');
-        } else {
-          showToast('Failed to retrieve user profile from Google. Please try again.', 'error');
-        }
-      }
-
-      function showUserLoggedIn(user) {
-        googleSignInContainer.classList.add('hidden');
-        userProfileBadge.classList.remove('hidden');
-        userPicture.src = user.picture;
-        userName.innerText = user.name;
-      }
-
-      logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('g_user');
-        showUserLoggedOut();
-        showToast('Successfully signed out.', 'success');
-      });
-
-      // Simple, elegant client-side decoding of JWT token without external libraries
-      function decodeJwt(token) {
-        try {
-          const base64Url = token.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-          }).join(''));
-          return JSON.parse(jsonPayload);
         } catch (error) {
-          console.error("Failed to decode JWT:", error);
-          return null;
+          console.error("Error communicating with Firestore: ", error);
+          // Graceful fallback for local display if firestore fetch is blocked
+          dashUserJoined.innerText = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          dashPromptsCount.innerText = "0";
+          
+          userPicture.src = user.photoURL;
+          dashUserPicture.src = user.photoURL;
+          userName.innerText = user.displayName;
+          dashUserName.innerText = user.displayName;
+          dashUserEmail.innerText = user.email;
         }
       }
 
-      // Initialize Authentication on load
-      window.addEventListener('load', () => {
-        initAuth();
-      });
+      // UI Screen Transition functions
+      function switchToDashboard() {
+        loggedOutView.classList.add('hidden');
+        loggedInDashboard.classList.remove('hidden');
+        userProfileBadge.classList.remove('hidden');
+      }
+
+      function switchToLoggedOut() {
+        loggedInDashboard.classList.add('hidden');
+        loggedOutView.classList.remove('hidden');
+        userProfileBadge.classList.add('hidden');
+        clearUploadedData();
+      }
 
       // =========================================================================
-      // IMAGE HANDLERS & NAVIGATION FLOW
+      // IMAGE HANDLERS & GENERATOR LOGIC
       // =========================================================================
 
       // Handle Drag & Drop events
@@ -546,6 +657,7 @@
         imagePreview.src = '';
         fileInput.value = '';
         previewSection.classList.add('hidden');
+        resultSection.classList.add('hidden');
         dropzoneSection.classList.remove('hidden');
         dropzoneSection.classList.add('fade-in');
         hideError();
@@ -553,15 +665,8 @@
 
       // Generate action trigger (Protected by Authentication Gatekeeper)
       generateBtn.addEventListener('click', async () => {
-        // AUTHENTICATION GATEKEEPER
-        const cachedUser = localStorage.getItem('g_user');
-        if (!cachedUser) {
-          showToast('Please Sign in with Google at the top right of the page first!', 'error');
-          // Add a subtle shake / pulse feedback to the authContainer to grab user's focus
-          authContainer.classList.add('scale-110');
-          setTimeout(() => {
-            authContainer.classList.remove('scale-110');
-          }, 300);
+        if (!currentUser) {
+          showToast('Please Sign in with Google at the top of the page first!', 'error');
           return;
         }
 
@@ -580,7 +685,6 @@
         loadingMessage.innerText = loadingPrompts[0];
         loadingMessageInterval = setInterval(() => {
           messageIndex = (messageIndex + 1) % loadingPrompts.length;
-          // Apply a quick smooth fade text transition
           loadingMessage.classList.add('opacity-0');
           setTimeout(() => {
             loadingMessage.innerText = loadingPrompts[messageIndex];
@@ -604,7 +708,20 @@
           const data = await response.json();
 
           if (!response.ok) {
-            throw new Error(data.error || 'Server rejected request.');
+            throw new Error(data.error || 'Server rejected prompt generation request.');
+          }
+
+          // Real Cloud sync: Increment prompt counter inside Firestore for current user
+          try {
+            const userDocRef = doc(db, "users", currentUser.uid);
+            await updateDoc(userDocRef, {
+              promptsCount: increment(1)
+            });
+            // Update local display counter
+            const currentVal = parseInt(dashPromptsCount.innerText) || 0;
+            dashPromptsCount.innerText = (currentVal + 1).toString();
+          } catch (dbErr) {
+            console.warn("Failed to increment promptsCount in Firestore:", dbErr);
           }
 
           // Stop loading animations
@@ -655,12 +772,10 @@
         });
       });
 
-      // Dynamic Multipurpose Alert Toast Helper (Supports Error and Success States)
+      // Alert Toast helper functions
       function showToast(msg, type = 'error') {
         errorMessage.innerText = msg;
-        
-        // Remove existing styled classes to reset cleanly
-        errorToast.className = "hidden mt-6 px-5 py-3.5 rounded-2xl text-sm font-medium w-full flex items-center gap-3 scale-up transition-all duration-300";
+        errorToast.className = "hidden mt-6 px-5 py-3.5 rounded-2xl text-sm font-medium w-full flex items-center gap-3 scale-up max-w-2xl transition-all duration-300";
         
         const svgEl = errorToast.querySelector('svg');
         
