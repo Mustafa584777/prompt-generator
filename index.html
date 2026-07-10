@@ -12,6 +12,9 @@
     
     <!-- Tailwind CSS v4 Browser Compiler -->
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    
+    <!-- Razorpay Web Checkout Integration Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <!-- Custom Theme & CSS overrides for tailored animations -->
     <style type="text/css">
@@ -182,6 +185,54 @@
                   <line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
               </div>
+            </div>
+          </div>
+
+          <!-- Subscription Plan Card -->
+          <div class="bg-white border border-slate-100 shadow-[0_15px_40px_rgba(99,102,241,0.03)] rounded-3xl p-6 text-left space-y-4 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Your Plan</span>
+              <span id="planBadge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 uppercase tracking-wide">Free Tier</span>
+            </div>
+            
+            <div id="freePlanDetails" class="space-y-3">
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-semibold text-slate-500">
+                  <span>Generations Limit</span>
+                  <span id="limitFraction">0 / 3</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="limitProgress" class="h-full bg-violet-600 transition-all duration-500" style="width: 0%;"></div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-400 font-medium">Enjoy 3 complimentary generations. Upgrade to unlock infinite prompt generations with high-speed processing.</p>
+              
+              <!-- Upgrade Button -->
+              <button 
+                id="upgradeBtn" 
+                class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-semibold py-3 px-4 rounded-2xl shadow-md shadow-orange-100 hover:shadow-orange-200 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer transform active:scale-[0.98] text-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                  <path d="M4 22h16"/>
+                  <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/>
+                  <path d="M12 2a4 4 0 0 0-4 4v6.67C8 13.5 8.5 14 9.17 14h5.66c.67 0 1.17-.5 1.17-1.33V6a4 4 0 0 0-4-4Z"/>
+                </svg>
+                Upgrade to Premium (₹199)
+              </button>
+            </div>
+
+            <div id="premiumPlanDetails" class="hidden space-y-2">
+              <div class="flex items-center gap-2 text-amber-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span class="font-bold text-sm">Unlimited Prompts Active 👑</span>
+              </div>
+              <p class="text-xs text-slate-400 font-medium">You have unlimited premium prompt generations. Thank you for being a Pro member!</p>
             </div>
           </div>
 
@@ -451,6 +502,52 @@
       let isGenerating = false;
       let loadingMessageInterval = null;
 
+      // Subscription State variables
+      let userIsPremium = false;
+      let userPromptsCount = 0;
+
+      // Update Subscription UI elements based on state
+      function updateSubscriptionUI(isPremium, promptsCount) {
+        userIsPremium = isPremium;
+        userPromptsCount = promptsCount || 0;
+
+        const planBadge = document.getElementById('planBadge');
+        const freePlanDetails = document.getElementById('freePlanDetails');
+        const premiumPlanDetails = document.getElementById('premiumPlanDetails');
+        const limitFraction = document.getElementById('limitFraction');
+        const limitProgress = document.getElementById('limitProgress');
+
+        if (!planBadge || !freePlanDetails || !premiumPlanDetails || !limitFraction || !limitProgress) {
+          return; // Guard in case views aren't rendered
+        }
+
+        if (isPremium) {
+          planBadge.innerText = 'Premium Pro 👑';
+          planBadge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 uppercase tracking-wide';
+          freePlanDetails.classList.add('hidden');
+          premiumPlanDetails.classList.remove('hidden');
+        } else {
+          planBadge.innerText = 'Free Tier';
+          planBadge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 uppercase tracking-wide';
+          freePlanDetails.classList.remove('hidden');
+          premiumPlanDetails.classList.add('hidden');
+
+          // Update limit display
+          const displayCount = Math.min(userPromptsCount, 3);
+          limitFraction.innerText = `${displayCount} / 3`;
+          
+          // Progress bar width
+          const percentage = Math.min((userPromptsCount / 3) * 100, 100);
+          limitProgress.style.width = `${percentage}%`;
+          
+          if (userPromptsCount >= 3) {
+            limitProgress.className = "h-full bg-rose-500 transition-all duration-500";
+          } else {
+            limitProgress.className = "h-full bg-violet-600 transition-all duration-500";
+          }
+        }
+      }
+
       // Loading screen rotating messages list
       const loadingPrompts = [
         "Analyzing image composition & structure...",
@@ -516,7 +613,8 @@
               email: user.email,
               photoURL: user.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
               joinedAt: serverTimestamp(),
-              promptsCount: 0
+              promptsCount: 0,
+              isPremium: false
             };
             
             await setDoc(userDocRef, profileData);
@@ -528,6 +626,7 @@
               day: 'numeric'
             });
             dashPromptsCount.innerText = "0";
+            updateSubscriptionUI(false, 0);
           } else {
             // Existing user: Load metrics
             const data = docSnap.data();
@@ -540,7 +639,10 @@
               day: 'numeric'
             });
             
-            dashPromptsCount.innerText = data.promptsCount || 0;
+            const promptsCount = data.promptsCount || 0;
+            const isPremium = data.isPremium || false;
+            dashPromptsCount.innerText = promptsCount;
+            updateSubscriptionUI(isPremium, promptsCount);
           }
 
           // Populate general header and profile attributes
@@ -560,6 +662,7 @@
             day: 'numeric'
           });
           dashPromptsCount.innerText = "0";
+          updateSubscriptionUI(false, 0);
           
           userPicture.src = user.photoURL;
           dashUserPicture.src = user.photoURL;
@@ -670,6 +773,22 @@
           return;
         }
 
+        // Limit Check for Free Users
+        if (!userIsPremium && userPromptsCount >= 3) {
+          showToast('Free limit of 3 prompts reached! Please upgrade to Premium to get unlimited prompt generations.', 'error');
+          
+          // Smoothly highlight the upgrade button to guide the user
+          const upgradeBtn = document.getElementById('upgradeBtn');
+          if (upgradeBtn) {
+            upgradeBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            upgradeBtn.classList.add('ring-4', 'ring-amber-400');
+            setTimeout(() => {
+              upgradeBtn.classList.remove('ring-4', 'ring-amber-400');
+            }, 3000);
+          }
+          return;
+        }
+
         if (!uploadedImageBase64 || isGenerating) return;
 
         isGenerating = true;
@@ -717,9 +836,11 @@
             await updateDoc(userDocRef, {
               promptsCount: increment(1)
             });
-            // Update local display counter
+            // Update local display counter and state
             const currentVal = parseInt(dashPromptsCount.innerText) || 0;
-            dashPromptsCount.innerText = (currentVal + 1).toString();
+            const newVal = currentVal + 1;
+            dashPromptsCount.innerText = newVal.toString();
+            updateSubscriptionUI(userIsPremium, newVal);
           } catch (dbErr) {
             console.warn("Failed to increment promptsCount in Firestore:", dbErr);
           }
@@ -771,6 +892,165 @@
           console.error('Failed to copy text: ', err);
         });
       });
+
+      // =========================================================================
+      // RAZORPAY UPGRADE PAYMENT FLOW
+      // =========================================================================
+      const upgradeBtn = document.getElementById('upgradeBtn');
+      if (upgradeBtn) {
+        upgradeBtn.addEventListener('click', async () => {
+          if (!currentUser) {
+            showToast('Please Sign in with Google first!', 'error');
+            return;
+          }
+
+          try {
+            upgradeBtn.disabled = true;
+            upgradeBtn.innerHTML = `
+              <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing...
+            `;
+
+            // Step 1: Create Payment Order on Backend
+            const createOrderEndpoint = BACKEND_API_URL 
+              ? `${BACKEND_API_URL.replace(/\/$/, '')}/api/razorpay/create-order` 
+              : '/api/razorpay/create-order';
+
+            const response = await fetch(createOrderEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ amount: 199, currency: 'INR' })
+            });
+
+            const orderData = await response.json();
+            if (!response.ok) {
+              throw new Error(orderData.error || 'Failed to create payment order.');
+            }
+
+            // Step 2: Open Razorpay checkout overlay
+            const options = {
+              key: orderData.key_id, 
+              amount: orderData.amount,
+              currency: orderData.currency,
+              name: "GeminiPromptGenerator Pro",
+              description: "Upgrade to Premium for Unlimited Prompt Generations",
+              image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&q=80",
+              order_id: orderData.id,
+              handler: async function (paymentResponse) {
+                try {
+                  // Step 3: Verify Payment Signature on Backend
+                  const verifyEndpoint = BACKEND_API_URL 
+                    ? `${BACKEND_API_URL.replace(/\/$/, '')}/api/razorpay/verify-payment` 
+                    : '/api/razorpay/verify-payment';
+
+                  const verifyResponse = await fetch(verifyEndpoint, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      razorpay_order_id: paymentResponse.razorpay_order_id,
+                      razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                      razorpay_signature: paymentResponse.razorpay_signature
+                    })
+                  });
+
+                  const verifyResult = await verifyResponse.json();
+                  if (!verifyResponse.ok) {
+                    throw new Error(verifyResult.error || 'Payment verification failed.');
+                  }
+
+                  // Step 4: Write Premium upgrade status to Firestore database
+                  const userDocRef = doc(db, "users", currentUser.uid);
+                  await updateDoc(userDocRef, {
+                    isPremium: true
+                  });
+
+                  showToast('Congratulations! Upgrade successful. Welcome to Premium Pro! 🎉', 'success');
+                  updateSubscriptionUI(true, userPromptsCount);
+
+                } catch (verifyErr) {
+                  console.error(verifyErr);
+                  showToast(verifyErr.message || 'Error verifying payment. Please contact support.', 'error');
+                  
+                  upgradeBtn.disabled = false;
+                  upgradeBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                      <path d="M4 22h16"/>
+                      <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/>
+                      <path d="M12 2a4 4 0 0 0-4 4v6.67C8 13.5 8.5 14 9.17 14h5.66c.67 0 1.17-.5 1.17-1.33V6a4 4 0 0 0-4-4Z"/>
+                    </svg>
+                    Upgrade to Premium (₹199)
+                  `;
+                }
+              },
+              prefill: {
+                name: currentUser.displayName || "",
+                email: currentUser.email || ""
+              },
+              theme: {
+                color: "#7c3aed" // Violet-600
+              },
+              modal: {
+                ondismiss: function () {
+                  // Reset button state
+                  upgradeBtn.disabled = false;
+                  upgradeBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                      <path d="M4 22h16"/>
+                      <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/>
+                      <path d="M12 2a4 4 0 0 0-4 4v6.67C8 13.5 8.5 14 9.17 14h5.66c.67 0 1.17-.5 1.17-1.33V6a4 4 0 0 0-4-4Z"/>
+                    </svg>
+                    Upgrade to Premium (₹199)
+                  `;
+                }
+              }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (resp) {
+              showToast(resp.error.description || 'Payment failed. Please try again.', 'error');
+              upgradeBtn.disabled = false;
+              upgradeBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                  <path d="M4 22h16"/>
+                  <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/>
+                  <path d="M12 2a4 4 0 0 0-4 4v6.67C8 13.5 8.5 14 9.17 14h5.66c.67 0 1.17-.5 1.17-1.33V6a4 4 0 0 0-4-4Z"/>
+                </svg>
+                Upgrade to Premium (₹199)
+              `;
+            });
+
+            rzp.open();
+
+          } catch (err) {
+            console.error(err);
+            showToast(err.message || 'Error processing upgrade. Please try again.', 'error');
+            upgradeBtn.disabled = false;
+            upgradeBtn.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                <path d="M4 22h16"/>
+                <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/>
+                <path d="M12 2a4 4 0 0 0-4 4v6.67C8 13.5 8.5 14 9.17 14h5.66c.67 0 1.17-.5 1.17-1.33V6a4 4 0 0 0-4-4Z"/>
+              </svg>
+              Upgrade to Premium (₹199)
+            `;
+          }
+        });
+      }
 
       // Alert Toast helper functions
       function showToast(msg, type = 'error') {

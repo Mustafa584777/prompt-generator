@@ -3,6 +3,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import Razorpay from "razorpay";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -99,6 +101,84 @@ At the very end of your response, provide 4-6 comma-separated keyword tags. Let 
     } catch (error: any) {
       console.error("Error generating prompt with Gemini:", error);
       res.status(500).json({ error: error.message || "An unexpected error occurred on the server." });
+    }
+  });
+
+  // Initialize Razorpay client lazily to prevent crashes if credentials are unset
+  let razorpayInstance: any = null;
+
+  function getRazorpayInstance() {
+    if (!razorpayInstance) {
+      const keyId = process.env.RAZORPAY_KEY_ID;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      if (!keyId || !keySecret) {
+        throw new Error("Razorpay API keys are missing. Please configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.");
+      }
+      razorpayInstance = new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret,
+      });
+    }
+    return razorpayInstance;
+  }
+
+  // Razorpay endpoint: Create Order
+  app.post("/api/razorpay/create-order", async (req, res) => {
+    try {
+      const { amount, currency } = req.body;
+      
+      // Default to ₹199 (19900 paise) if amount not provided
+      const orderAmount = amount ? Math.round(amount * 100) : 19900; 
+      const orderCurrency = currency || "INR";
+      
+      const razorpay = getRazorpayInstance();
+      const options = {
+        amount: orderAmount,
+        currency: orderCurrency,
+        receipt: `receipt_order_${Date.now()}`,
+      };
+      
+      const order = await razorpay.orders.create(options);
+      
+      res.json({
+        id: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        key_id: process.env.RAZORPAY_KEY_ID
+      });
+    } catch (error: any) {
+      console.error("Error creating Razorpay order:", error);
+      res.status(500).json({ error: error.message || "Failed to create Razorpay order." });
+    }
+  });
+
+  // Razorpay endpoint: Verify Payment Signature
+  app.post("/api/razorpay/verify-payment", async (req, res) => {
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+      
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({ error: "Missing required Razorpay payment verification parameters." });
+      }
+      
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      if (!keySecret) {
+        throw new Error("Razorpay secret key is missing on the server.");
+      }
+      
+      const generatedSignature = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+        
+      if (generatedSignature === razorpay_signature) {
+        res.json({ status: "success", message: "Payment verified successfully." });
+      } else {
+        res.status(400).json({ error: "Invalid payment signature verification failed." });
+      }
+    } catch (error: any) {
+      console.error("Error verifying payment signature:", error);
+      res.status(500).json({ error: error.message || "Failed to verify Razorpay payment." });
     }
   });
 
