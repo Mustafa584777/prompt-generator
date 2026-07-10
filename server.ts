@@ -109,11 +109,8 @@ At the very end of your response, provide 4-6 comma-separated keyword tags. Let 
 
   function getRazorpayInstance() {
     if (!razorpayInstance) {
-      const keyId = process.env.RAZORPAY_KEY_ID;
-      const keySecret = process.env.RAZORPAY_KEY_SECRET;
-      if (!keyId || !keySecret) {
-        throw new Error("Razorpay API keys are missing. Please configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.");
-      }
+      const keyId = process.env.RAZORPAY_KEY_ID || "rzp_live_TAsRhhdJwnXn7B";
+      const keySecret = process.env.RAZORPAY_KEY_SECRET || "xAQq6nIVU3Czu7I5hpDk7WjR";
       razorpayInstance = new Razorpay({
         key_id: keyId,
         key_secret: keySecret,
@@ -144,7 +141,7 @@ At the very end of your response, provide 4-6 comma-separated keyword tags. Let 
         id: order.id,
         amount: order.amount,
         currency: order.currency,
-        key_id: process.env.RAZORPAY_KEY_ID
+        key_id: process.env.RAZORPAY_KEY_ID || "rzp_live_TAsRhhdJwnXn7B"
       });
     } catch (error: any) {
       console.error("Error creating Razorpay order:", error);
@@ -161,7 +158,7 @@ At the very end of your response, provide 4-6 comma-separated keyword tags. Let 
         return res.status(400).json({ error: "Missing required Razorpay payment verification parameters." });
       }
       
-      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET || "xAQq6nIVU3Czu7I5hpDk7WjR";
       if (!keySecret) {
         throw new Error("Razorpay secret key is missing on the server.");
       }
