@@ -878,13 +878,25 @@
             ? `${BACKEND_API_URL.replace(/\/$/, '')}/api/generate-prompt` 
             : '/api/generate-prompt';
 
-          const response = await fetch(apiEndpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ image: uploadedImageBase64 })
-          });
+          let response;
+          try {
+            response = await fetch(apiEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ image: uploadedImageBase64 })
+            });
+          } catch (fetchErr) {
+            console.warn("Primary generate-prompt endpoint failed, trying relative fallback:", fetchErr);
+            response = await fetch('/api/generate-prompt', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ image: uploadedImageBase64 })
+            });
+          }
 
           const data = await response.json();
 
@@ -987,13 +999,25 @@
               ? `${BACKEND_API_URL.replace(/\/$/, '')}/api/razorpay/create-order` 
               : '/api/razorpay/create-order';
 
-            const response = await fetch(createOrderEndpoint, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ amount: creditsToBuy, currency: 'INR' })
-            });
+            let response;
+            try {
+              response = await fetch(createOrderEndpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ amount: creditsToBuy, currency: 'INR' })
+              });
+            } catch (fetchErr) {
+              console.warn("Primary create-order failed, trying relative fallback:", fetchErr);
+              response = await fetch('/api/razorpay/create-order', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ amount: creditsToBuy, currency: 'INR' })
+              });
+            }
 
             const orderData = await response.json();
             if (!response.ok) {
@@ -1016,17 +1040,33 @@
                     ? `${BACKEND_API_URL.replace(/\/$/, '')}/api/razorpay/verify-payment` 
                     : '/api/razorpay/verify-payment';
 
-                  const verifyResponse = await fetch(verifyEndpoint, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      razorpay_order_id: paymentResponse.razorpay_order_id,
-                      razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                      razorpay_signature: paymentResponse.razorpay_signature
-                    })
-                  });
+                  let verifyResponse;
+                  try {
+                    verifyResponse = await fetch(verifyEndpoint, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        razorpay_order_id: paymentResponse.razorpay_order_id,
+                        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                        razorpay_signature: paymentResponse.razorpay_signature
+                      })
+                    });
+                  } catch (fetchErr) {
+                    console.warn("Primary verify-payment failed, trying relative fallback:", fetchErr);
+                    verifyResponse = await fetch('/api/razorpay/verify-payment', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        razorpay_order_id: paymentResponse.razorpay_order_id,
+                        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                        razorpay_signature: paymentResponse.razorpay_signature
+                      })
+                    });
+                  }
 
                   const verifyResult = await verifyResponse.json();
                   if (!verifyResponse.ok) {
