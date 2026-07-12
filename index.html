@@ -205,7 +205,7 @@
           </div>
 
           <!-- Subscription Plan Card -->
-          <div class="bg-white border border-slate-100 shadow-[0_15px_40px_rgba(99,102,241,0.03)] rounded-3xl p-6 text-left space-y-4 relative overflow-hidden">
+          <div id="subscriptionCard" class="bg-white border border-slate-100 shadow-[0_15px_40px_rgba(99,102,241,0.03)] rounded-3xl p-6 text-left space-y-4 relative overflow-hidden">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Your Credits</span>
               <span id="planBadge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 uppercase tracking-wide">3 Credits</span>
@@ -279,7 +279,7 @@
           </div>
 
           <!-- Stats Summary Card -->
-          <div class="bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-[0_15px_40px_rgba(99,102,241,0.15)] rounded-3xl p-6 relative overflow-hidden">
+          <div id="promptsCountCard" class="bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-[0_15px_40px_rgba(99,102,241,0.15)] rounded-3xl p-6 relative overflow-hidden">
             <!-- Background glow -->
             <div class="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
             
@@ -697,7 +697,7 @@
 
         try {
           const promptsRef = collection(db, "prompts");
-          const q = query(promptsRef, where("uid", "==", userId), orderBy("createdAt", "desc"), limit(10));
+          const q = query(promptsRef, where("uid", "==", userId), limit(50));
           const querySnapshot = await getDocs(q);
 
           if (querySnapshot.empty) {
@@ -709,17 +709,32 @@
             return;
           }
 
-          let html = '';
+          // Sort documents client-side by createdAt descending to avoid composite index requirement
+          const docs = [];
           querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
+            docs.push({ id: docSnap.id, data: docSnap.data() });
+          });
+
+          docs.sort((a, b) => {
+            const timeA = a.data.createdAt ? (a.data.createdAt.toMillis ? a.data.createdAt.toMillis() : new Date(a.data.createdAt).getTime()) : 0;
+            const timeB = b.data.createdAt ? (b.data.createdAt.toMillis ? b.data.createdAt.toMillis() : new Date(b.data.createdAt).getTime()) : 0;
+            return timeB - timeA;
+          });
+
+          // Limit to top 10 items
+          const slicedDocs = docs.slice(0, 10);
+
+          let html = '';
+          slicedDocs.forEach((docItem) => {
+            const data = docItem.data;
             const promptText = data.prompt || '';
             const escapedPrompt = promptText.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString('en-US', {
+            const date = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate().toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
               hour: '2-digit',
               minute: '2-digit'
-            }) : 'Just now';
+            }) : new Date(data.createdAt).toLocaleDateString()) : 'Just now';
 
             html += `
               <div class="bg-slate-50 border border-slate-100/80 rounded-2xl p-5 hover:border-violet-200 hover:bg-violet-50/5 transition-all duration-200 text-left">
@@ -889,6 +904,12 @@
         const headerGoogleLoginBtn = document.getElementById('headerGoogleLoginBtn');
         if (headerGoogleLoginBtn) headerGoogleLoginBtn.classList.add('hidden');
 
+        // Show subscription and prompts count cards for logged-in users
+        const subscriptionCard = document.getElementById('subscriptionCard');
+        if (subscriptionCard) subscriptionCard.classList.remove('hidden');
+        const promptsCountCard = document.getElementById('promptsCountCard');
+        if (promptsCountCard) promptsCountCard.classList.remove('hidden');
+
         // Show prompt history card for logged-in users
         const historyCard = document.getElementById('historyCard');
         if (historyCard) {
@@ -908,6 +929,12 @@
         const headerGoogleLoginBtn = document.getElementById('headerGoogleLoginBtn');
         if (headerGoogleLoginBtn) headerGoogleLoginBtn.classList.remove('hidden');
 
+        // Hide subscription and prompts count cards for guest users
+        const subscriptionCard = document.getElementById('subscriptionCard');
+        if (subscriptionCard) subscriptionCard.classList.add('hidden');
+        const promptsCountCard = document.getElementById('promptsCountCard');
+        if (promptsCountCard) promptsCountCard.classList.add('hidden');
+
         // Hide prompt history card for guest users
         const historyCard = document.getElementById('historyCard');
         if (historyCard) historyCard.classList.add('hidden');
@@ -921,7 +948,7 @@
         if (dashUserName) dashUserName.innerText = "Guest User";
         
         const dashUserEmail = document.getElementById('dashUserEmail');
-        if (dashUserEmail) dashUserEmail.innerText = "Sign in to save history";
+        if (dashUserEmail) dashUserEmail.innerText = "Sign in to save history + get 5 Free credits";
         
         const dashUserJoined = document.getElementById('dashUserJoined');
         if (dashUserJoined) dashUserJoined.innerText = "No account created";
