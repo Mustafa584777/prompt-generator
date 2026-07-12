@@ -150,7 +150,7 @@
           <div class="space-y-2">
             <h3 class="font-display font-bold text-xl text-slate-800">Ready to Get Started?</h3>
             <p class="text-slate-400 text-xs font-medium max-w-xs mx-auto">
-              Sign in with your Google Account to unlock prompt generation and track your creation history on your personal dashboard.
+              Sign in to save history + get 5 Free credits instantly on your personal dashboard!
             </p>
           </div>
 
@@ -205,7 +205,7 @@
           </div>
 
           <!-- Subscription Plan Card -->
-          <div id="subscriptionCard" class="bg-white border border-slate-100 shadow-[0_15px_40px_rgba(99,102,241,0.03)] rounded-3xl p-6 text-left space-y-4 relative overflow-hidden">
+          <div id="subscriptionCard" class="hidden bg-white border border-slate-100 shadow-[0_15px_40px_rgba(99,102,241,0.03)] rounded-3xl p-6 text-left space-y-4 relative overflow-hidden">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Your Credits</span>
               <span id="planBadge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 uppercase tracking-wide">3 Credits</span>
@@ -279,7 +279,7 @@
           </div>
 
           <!-- Stats Summary Card -->
-          <div id="promptsCountCard" class="bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-[0_15px_40px_rgba(99,102,241,0.15)] rounded-3xl p-6 relative overflow-hidden">
+          <div id="promptsCountCard" class="hidden bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-[0_15px_40px_rgba(99,102,241,0.15)] rounded-3xl p-6 relative overflow-hidden">
             <!-- Background glow -->
             <div class="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
             
@@ -726,39 +726,59 @@
 
           let html = '';
           slicedDocs.forEach((docItem) => {
-            const data = docItem.data;
-            const promptText = data.prompt || '';
-            const escapedPrompt = promptText.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            const date = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate().toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            }) : new Date(data.createdAt).toLocaleDateString()) : 'Just now';
+            try {
+              const data = docItem.data;
+              const promptText = data.prompt || '';
+              const escapedPrompt = promptText.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+              
+              let dateStr = 'Just now';
+              if (data.createdAt) {
+                if (typeof data.createdAt.toDate === 'function') {
+                  dateStr = data.createdAt.toDate().toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                } else {
+                  const parsedDate = new Date(data.createdAt);
+                  if (!isNaN(parsedDate.getTime())) {
+                    dateStr = parsedDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                  }
+                }
+              }
 
-            html += `
-              <div class="bg-slate-50 border border-slate-100/80 rounded-2xl p-5 hover:border-violet-200 hover:bg-violet-50/5 transition-all duration-200 text-left">
-                <div class="flex items-center justify-between gap-4 mb-2.5">
-                  <span class="text-slate-400 text-xs font-mono">${date}</span>
-                  <button 
-                    onclick="copyHistoryPrompt(this, \`${escapedPrompt}\`)"
-                    class="text-[11px] font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1 bg-white hover:bg-violet-50 px-2.5 py-1 border border-slate-100 rounded-lg shadow-sm transition-all cursor-pointer"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-                      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-                    </svg>
-                    Copy
-                  </button>
+              html += `
+                <div class="bg-slate-50 border border-slate-100/80 rounded-2xl p-5 hover:border-violet-200 hover:bg-violet-50/5 transition-all duration-200 text-left">
+                  <div class="flex items-center justify-between gap-4 mb-2.5">
+                    <span class="text-slate-400 text-xs font-mono">${dateStr}</span>
+                    <button 
+                      onclick="copyHistoryPrompt(this, \`${escapedPrompt}\`)"
+                      class="text-[11px] font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1 bg-white hover:bg-violet-50 px-2.5 py-1 border border-slate-100 rounded-lg shadow-sm transition-all cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                      </svg>
+                      Copy
+                    </button>
+                  </div>
+                  <p class="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap line-clamp-3">${promptText}</p>
                 </div>
-                <p class="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap line-clamp-3">${promptText}</p>
-              </div>
-            `;
+              `;
+            } catch (itemErr) {
+              console.warn("Error parsing history item:", itemErr);
+            }
           });
 
           historyList.innerHTML = html;
         } catch (err) {
-          console.warn("Failed to load prompt history:", err);
+          console.error("Failed to load prompt history:", err);
           historyList.innerHTML = `
             <div class="text-rose-500 text-sm py-4 text-center font-medium">
               Error loading creation history.
